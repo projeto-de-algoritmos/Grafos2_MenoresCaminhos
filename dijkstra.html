@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+  #grafo {
+    height: 700px;
+    width: 1500px;
+  }
+  </style>
+  <body>
+    <div id="grafo"></div>
+  </body>
+  <script>
+    (function(){
+
+      var width,height, chartWidth, chartHeight, margin
+      var svg = d3.select("#grafo").append("svg")
+      main();
+      
+      
+      function main() {
+          var data = {
+              nodes:d3.range( 0, 10 ).map(function(d){ 
+                return {
+                  r:25,
+                  nome: "No"+d
+                }
+              }),
+          }
+
+          var grafo = {};
+          var jsonArr = [];
+          for (var i = 0; i < 10; i++) {
+              var nb_links = Math.floor(Math.random() * 4) + 1
+              if ( i + 4 >= 10) {
+                  nb_links = ( 10 - i ) - 1
+              }
+              var nome = data.nodes[i].nome;
+              grafo[nome] = {}
+              for (var j = 1; j <= nb_links; j++) {
+                  var dist = Math.floor(Math.random() * 9) + 1;
+                  jsonArr.push({
+                      source: data.nodes[i], 
+                      target: data.nodes[j+i],
+                      distancia: dist
+                  });
+                  grafo[nome][data.nodes[j+i].nome] = dist;
+              }
+          }
+          data.links = jsonArr;
+          definir_tamanho(data)
+          gerar_grafo(data, grafo)
+
+      }
+      
+      function definir_tamanho(data) {
+          width = document.querySelector("#grafo").clientWidth
+          height = document.querySelector("#grafo").clientHeight
+      
+          margin = {top:0, left:0, bottom:0, right:0 }
+          
+          chartWidth = width - (margin.left+margin.right)
+          chartHeight = height - (margin.top+margin.bottom)
+          
+          svg.attr("width", width).attr("height", height)
+          
+          svg.append("g").classed("chartLayer", true)
+              .attr("width", chartWidth)
+              .attr("height", chartHeight)
+      }
+      
+      function gerar_grafo(data, grafo) {
+          
+          var simulation = d3.forceSimulation()
+              .force('charge', d3.forceManyBody().strength(-20))
+              .force('collide',d3.forceCollide().radius(60).iterations(2))
+              .force("center", d3.forceCenter(chartWidth / 2, chartHeight / 2))
+  
+
+          var no = svg.append("g")
+              .attr("class", "nodes")
+              .selectAll("circle")
+              .data(data.nodes)
+              .enter().append("circle")
+              .attr("r", function(d){  return d.r })
+              .call(d3.drag()
+                  .on("start", dragstarted)
+                  .on("drag", dragged)
+                  .on("end", dragended));
+
+           var ticked = function() {
+            no
+              .attr("cx", function(d) { return d.x; })
+              .attr("cy", function(d) { return d.y; });
+          }  
+          
+          simulation
+              .nodes(data.nodes)
+              .on("tick", ticked);
+      
+          function dragstarted(d) {
+              if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+              d.fx = d.x;
+              d.fy = d.y;
+          }
+          
+          function dragged(d) {
+              d.fx = d3.event.x;
+              d.fy = d3.event.y;
+          }
+          
+          function dragended(d) {
+              if (!d3.event.active) simulation.alphaTarget(0);
+              d.fx = null;
+              d.fy = null;
+          }         
+
+      }
+    }());
+  </script>    
+</html>
