@@ -8,22 +8,21 @@
   }
   </style>
   <body>
-    <p id="distancia"></p>
-    <div id="grafo">
-    </div>
-
+    <div id="grafo"></div>
   </body>
   <script>
     (function(){
 
       var width,height, chartWidth, chartHeight, margin
       var svg = d3.select("#grafo").append("svg")
+      var chartLayer = svg.append("g").classed("chartLayer", true)
+      
       main();
-
-
+      
+      
       function main() {
           var data = {
-              nodes:d3.range( 0, 10 ).map(function(d){
+              nodes:d3.range( 0, 11 ).map(function(d){ 
                 return {
                   r:25,
                   nome: "No"+d
@@ -33,17 +32,17 @@
 
           var grafo = {};
           var jsonArr = [];
-          for (var i = 0; i < 10; i++) {
-              var nb_links = Math.floor(Math.random() * 4) + 1
-              if ( i + 4 >= 10) {
-                  nb_links = ( 10 - i ) - 1
+          for (var i = 0; i < 11; i++) {
+              var nb_links = Math.floor(Math.random() * 3) + 1
+              if ( i + 3 >= 11) {
+                  nb_links = ( 11 - i ) - 1
               }
               var nome = data.nodes[i].nome;
               grafo[nome] = {}
               for (var j = 1; j <= nb_links; j++) {
                   var dist = Math.floor(Math.random() * 9) + 1;
                   jsonArr.push({
-                      source: data.nodes[i],
+                      source: data.nodes[i], 
                       target: data.nodes[j+i],
                       distancia: dist
                   });
@@ -56,29 +55,96 @@
 
       }
 
+      function dijkstra(grafo) {
+        const custos = Object.assign({[ultimo_no]: Infinity}, grafo['No3']);
+        const parentes = {[ultimo_no]: null};
+        var len = Object.keys(grafo).length
+        var ultimo_no = 'No10';
+        for (let filho in grafo['No3']) {
+          parentes[filho] = 'No3';
+        }
+        const processado = [];
+        let no = Object.keys(custos).reduce((menor, no) => {
+          if (menor == null || (custos[no] < custos[menor])) {
+            if (!processado.includes(no)) {
+              menor = no;
+            }
+          }
+          return menor;
+        }, null);
+
+        while (no!=undefined) {
+          let cost = custos[no];
+          let filho = grafo[no];
+          let n, novo_custo;
+          for (n in filho) {
+            novo_custo = cost + filho[n];
+            if (custos[n] > novo_custo) {
+              parentes[n] = no;
+              custos[n] = novo_custo;
+            }
+            if (custos[n] == undefined) {
+              parentes[n] = no;
+              custos[n] = novo_custo;
+            }
+          }
+          processado.push(no);
+          no = Object.keys(custos).reduce((menor, no) => {
+            if (menor === null || custos[no] < custos[menor]) {
+              if (!processado.includes(no)) {
+                menor = no;
+              }
+            }
+            return menor;
+          }, null);
+        }
+        let melhor_caminho = [ultimo_no];
+        let parente = parentes[ultimo_no];
+        while (parente!=undefined) {
+          melhor_caminho.push(parente);
+          parente = parentes[parente];
+        }
+        melhor_caminho.reverse();
+        const resultados = {
+          path: melhor_caminho,
+          distancia: custos[ultimo_no]
+        };
+        return resultados;
+      }
+      
       function definir_tamanho(data) {
           width = document.querySelector("#grafo").clientWidth
           height = document.querySelector("#grafo").clientHeight
-
+      
           margin = {top:0, left:0, bottom:0, right:0 }
-
+          
           chartWidth = width - (margin.left+margin.right)
           chartHeight = height - (margin.top+margin.bottom)
-
+          
           svg.attr("width", width).attr("height", height)
-
-          svg.append("g").classed("chartLayer", true)
+          
+          chartLayer
               .attr("width", chartWidth)
               .attr("height", chartHeight)
+              .attr("transform", "translate("+[margin.left, margin.top]+")")
       }
-
-      function gerar_grafo(data, grafo) {
-
+      
+       function gerar_grafo(data, grafo) {
+          
           var simulation = d3.forceSimulation()
               .force("aresta", d3.forceLink().id(function(d) { return d.index }))
               .force('charge', d3.forceManyBody().strength(-20))
               .force('collide',d3.forceCollide().radius(60).iterations(2))
               .force("center", d3.forceCenter(chartWidth / 2, chartHeight / 2))
+      
+          var aresta = svg.append("g")
+              .attr("class", "links")
+              .selectAll("line")
+              .data(data.links)
+              .enter()
+              .append("line")
+              .attr("id", function(d){  return d.source.nome + '-' + d.target.nome })
+              .attr("stroke", "green")
 
           var no = svg.append("g")
               .attr("class", "nodes")
@@ -86,12 +152,13 @@
               .data(data.nodes)
               .enter().append("circle")
               .attr("r", function(d){  return d.r })
+              .attr("fill", "black")
+              .attr("stroke", "pink")
+              .attr("id", function(d){  return d.nome })
               .call(d3.drag()
                   .on("start", dragstarted)
                   .on("drag", dragged)
                   .on("end", dragended));
-
-
 
           var nome_no = svg.append("g")
               .attr("class", "nome_nos")
@@ -104,16 +171,7 @@
               .attr("font-size", 17)
               .attr("text-anchor", "middle")
               .attr("dy", ".45em")
-              .attr("fill", "white")
-
-          var aresta = svg.append("g")
-              .attr("class", "links")
-              .selectAll("line")
-              .data(data.links)
-              .enter()
-              .append("line")
-              .attr("id", function(d){  return d.source.nome + '-' + d.target.nome })
-              .attr("stroke", "green")
+              .attr("fill", "white") 
 
           var distancia = svg.append("g")
               .attr("class", "distancia")
@@ -121,51 +179,61 @@
               .data(data.links)
               .enter()
               .append("text")
-              .attr("font-size", 17)
-              .attr("fill", "purple")
+              .attr("font-size", 15)
+              .attr("fill", "purple") 
               .text( function (d) { return d.distancia; })
 
-
-           var ticked = function() {
-            aresta
-              .attr("x1", function(d) { return d.source.x; })
-              .attr("y1", function(d) { return d.source.y; })
-              .attr("x2", function(d) { return d.target.x; })
-              .attr("y2", function(d) { return d.target.y; });
+          var ticked = function() {
+            no
+              .attr("cx", function(d) { return d.x; })
+              .attr("cy", function(d) { return d.y; });
             distancia
               .attr("x", function(d) { return d.source.x + ( (d.target.x - d.source.x) / 2 ); })
               .attr("y", function(d) { return d.source.y + ( (d.target.y - d.source.y) / 2 ) - 10; });
             nome_no
               .attr("x", function(d) { return d.x; })
               .attr("y", function(d) { return d.y; });
-
-            no
-              .attr("cx", function(d) { return d.x; })
-              .attr("cy", function(d) { return d.y; });
-          }
-
+            aresta
+                .attr("x1", function(d) { return d.source.x; })
+                .attr("y1", function(d) { return d.source.y; })
+                .attr("x2", function(d) { return d.target.x; })
+                .attr("y2", function(d) { return d.target.y; });
+          }  
+          
           simulation
               .nodes(data.nodes)
               .on("tick", ticked);
+      
+          var resultado_dijsktra = dijkstra(grafo);
+          var path_len = resultado_dijsktra.path.length;
+          document.getElementById( 'No3').setAttribute( "fill", "red" )
+          for (var i = 0; i < resultado_dijsktra.path.length; i++) {
+              var li_node = document.createElement("li");
+              var textnode = document.createTextNode(resultado_dijsktra.path[i]);
+              li_node.appendChild(textnode);
+              if ( i < path_len - 1 ) {
+                var line_elem = document.getElementById( resultado_dijsktra.path[i] + '-' + resultado_dijsktra.path[i+1] ).setAttribute( "stroke", "red" );
+                var node_elem = document.getElementById( resultado_dijsktra.path[i+1] ).setAttribute( "fill", "red" );
+              }
+          }
 
           function dragstarted(d) {
               if (!d3.event.active) simulation.alphaTarget(0.3).restart();
               d.fx = d.x;
               d.fy = d.y;
           }
-
+          
           function dragged(d) {
               d.fx = d3.event.x;
               d.fy = d3.event.y;
           }
-
+          
           function dragended(d) {
               if (!d3.event.active) simulation.alphaTarget(0);
               d.fx = null;
               d.fy = null;
-          }
-
+          }         
       }
     }());
-  </script>
+  </script>    
 </html>
