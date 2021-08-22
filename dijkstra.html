@@ -77,16 +77,6 @@
               .force('collide',d3.forceCollide().radius(60).iterations(2))
               .force("center", d3.forceCenter(chartWidth / 2, chartHeight / 2))
 
-          var aresta = svg.append("g")
-              .attr("class", "links")
-              .selectAll("line")
-              .data(data.links)
-              .enter()
-              .append("line")
-              .attr("id", function(d){  return d.source.nome + '-' + d.target.nome })
-              .attr("stroke", "green")
-
-
           var no = svg.append("g")
               .attr("class", "nodes")
               .selectAll("circle")
@@ -98,12 +88,40 @@
                   .on("drag", dragged)
                   .on("end", dragended));
 
+
+
+          var nome_no = svg.append("g")
+              .attr("class", "nome_nos")
+              .selectAll("text")
+              .data(data.nodes)
+              .enter()
+              .append("text")
+              .text( function (d) { return d.nome; })
+              .attr("font-family", "Arial")
+              .attr("font-size", 17)
+              .attr("text-anchor", "middle")
+              .attr("dy", ".45em")
+              .attr("fill", "white")
+
+          var aresta = svg.append("g")
+              .attr("class", "links")
+              .selectAll("line")
+              .data(data.links)
+              .enter()
+              .append("line")
+              .attr("id", function(d){  return d.source.nome + '-' + d.target.nome })
+              .attr("stroke", "green")
+
            var ticked = function() {
             aresta
               .attr("x1", function(d) { return d.source.x; })
               .attr("y1", function(d) { return d.source.y; })
               .attr("x2", function(d) { return d.target.x; })
               .attr("y2", function(d) { return d.target.y; });
+
+            nome_no
+              .attr("x", function(d) { return d.x; })
+              .attr("y", function(d) { return d.y; });
 
             no
               .attr("cx", function(d) { return d.x; })
