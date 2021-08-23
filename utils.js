@@ -1,0 +1,50 @@
+function valor_no(no) {
+    return parseInt(no.match(/\d+/)[0]);
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+function resetar_caminho() {
+    d3.selectAll('circle')
+        .attr("fill", "black");
+    d3.selectAll('line')
+        .attr("fill", "green")
+        .attr("stroke", "green");
+    document.getElementById('caminho').innerHTML = 'Caminho percorrido: ';
+    document.getElementById('distancia').innerHTML = 'Distancia entre nós: '
+}
+
+function cria_options(select, numero_nos) {
+    for (var i = 0; i<numero_nos; i++){
+        var opt = document.createElement('option');
+        opt.value = 'No'+i;
+        opt.innerHTML = 'Nó '+i;
+        select.appendChild(opt);
+    }
+}
+
+function preenche_select(numero_nos) {
+    origem = document.getElementById('origem');
+    cria_options(origem, numero_nos)
+    destino = document.getElementById('destino');
+    cria_options(destino, numero_nos)
+}
+
+function dragstarted(d) {
+    if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+}
+
+function dragged(d) {
+    d.fx = d3.event.x;
+    d.fy = d3.event.y;
+}
+
+function dragended(d) {
+    if (!d3.event.active) simulation.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
+}         
