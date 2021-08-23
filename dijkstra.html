@@ -1,38 +1,122 @@
 <!DOCTYPE html>
 <html>
   <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj" crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
   <style>
   #grafo {
     height: 700px;
     width: 1500px;
   }
+
+  .centraliza {
+    justify-content: center !important;
+    display: flex !important;
+  }
+
+  .btn-submit {
+    width: 10em;
+  }
+
+  .select-no {
+    width: 13em;
+  }
+
   </style>
   <body>
-    <div id="grafo"></div>
+    <div class="row">
+      <h1 class="centraliza">Grafos</h1>
+    </div>
+    <div class="row centraliza">
+      <form id="dijsktra-form">
+        <div class="row">
+          <div class="col-4 centraliza">
+            <select id="origem" class="form-select select-no" required>
+              <option selected disabled hidden value="">Selecione a origem</option>
+            </select>
+          </div>
+          <div class="col-4 centraliza">
+            <select id="destino" class="form-select select-no" required>
+              <option selected disabled hidden value="">Selecione a destino</option>
+            </select>
+          </div>  
+          <div class="col-4 centraliza">
+            <button id="rodar-dijsktra" type="submit" value="Submit" class="btn btn-lg btn-primary btn-submit">Rodar dijsktra</button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+    <div class="row centraliza">
+      <div id="grafo"></div>
+    </div>
   </body>
   <script>
     (function(){
+      var grafo = {};
 
       var width,height, chartWidth, chartHeight, margin
       var svg = d3.select("#grafo").append("svg")
       var chartLayer = svg.append("g").classed("chartLayer", true)
-
+      
       var raio = 25;
       var texto_no = 17;
       var texto_aresta = 15;
 
       var numero_nos = 11
       var numero_max_arestas_entre_nos = 2;
-      var no_inicial = 'No3'
-      var no_final = 'No10'
+      
+      function valor_no(no) {
+        return parseInt(no.match(/\d+/)[0]);
+      }
+
+      $("#dijsktra-form").submit(function(e) {
+          e.preventDefault();
+          resetar_caminho();
+          no_inicial = e.target.elements.origem.value;
+          no_final = e.target.elements.destino.value;
+          if (valor_no(no_inicial) > valor_no(no_final)) {
+            console.log("ENTROU");
+            let aux = no_final;
+            no_final = no_inicial;
+            no_inicial = aux;
+          }
+          rodar_dijsktra();
+      })
+
+      function resetar_caminho() {
+        d3.selectAll('circle')
+          .attr("fill", "black");
+        d3.selectAll('line')
+          .attr("fill", "green")
+          .attr("stroke", "green");
+      }
 
 
+      function cria_options(select) {
+        for (var i = 0; i<numero_nos; i++){
+            var opt = document.createElement('option');
+            opt.value = 'No'+i;
+            opt.innerHTML = 'Nó '+i;
+            select.appendChild(opt);
+        }
+      }
+
+      function preenche_select() {
+        origem = document.getElementById('origem');
+        cria_options(origem)
+        destino = document.getElementById('destino');
+        cria_options(destino)
+      }
+
+      preenche_select();
       main();
-
-
+      
+      
       function main() {
           var data = {
-              nodes:d3.range( 0, numero_nos ).map(function(d){
+              nodes:d3.range( 0, numero_nos ).map(function(d){ 
                 return {
                   r:raio,
                   nome: "No"+d
@@ -40,7 +124,6 @@
               }),
           }
 
-          var grafo = {};
           var jsonArr = [];
           for (var i = 0; i < numero_nos; i++) {
               var nb_links = Math.floor(Math.random() * numero_max_arestas_entre_nos) + 1
@@ -52,7 +135,7 @@
               for (var j = 1; j <= nb_links; j++) {
                   var dist = Math.floor(Math.random() * 9) + 1;
                   jsonArr.push({
-                      source: data.nodes[i],
+                      source: data.nodes[i], 
                       target: data.nodes[j+i],
                       distancia: dist
                   });
@@ -61,11 +144,26 @@
           }
           data.links = jsonArr;
           definir_tamanho(data)
-          gerar_grafo(data, grafo)
-
+          gerar_grafo(data)
       }
 
-      function dijkstra(grafo) {
+      function rodar_dijsktra() {
+        var resultado_dijsktra = dijkstra();
+        console.log(resultado_dijsktra)
+        var path_len = resultado_dijsktra.path.length;
+        document.getElementById( no_inicial).setAttribute( "fill", "red" )
+        for (var i = 0; i < resultado_dijsktra.path.length; i++) {
+            var li_node = document.createElement("li");
+            var textnode = document.createTextNode(resultado_dijsktra.path[i]);
+            li_node.appendChild(textnode);
+            if ( i < path_len - 1 ) {
+              var line_elem = document.getElementById( resultado_dijsktra.path[i] + '-' + resultado_dijsktra.path[i+1] ).setAttribute( "stroke", "red" );
+              var node_elem = document.getElementById( resultado_dijsktra.path[i+1] ).setAttribute( "fill", "red" );
+            }
+        }
+      }
+
+      function dijkstra() {
         const custos = Object.assign({[no_final]: Infinity}, grafo[no_inicial]);
         const parentes = {[no_final]: null};
         var len = Object.keys(grafo).length
@@ -120,32 +218,32 @@
         };
         return resultados;
       }
-
+      
       function definir_tamanho(data) {
           width = document.querySelector("#grafo").clientWidth
           height = document.querySelector("#grafo").clientHeight
-
+      
           margin = {top:0, left:0, bottom:0, right:0 }
-
+          
           chartWidth = width - (margin.left+margin.right)
           chartHeight = height - (margin.top+margin.bottom)
-
+          
           svg.attr("width", width).attr("height", height)
-
+          
           chartLayer
               .attr("width", chartWidth)
               .attr("height", chartHeight)
               .attr("transform", "translate("+[margin.left, margin.top]+")")
       }
-
-       function gerar_grafo(data, grafo) {
-
+      
+       function gerar_grafo(data) {
+          
           var simulation = d3.forceSimulation()
               .force('charge', d3.forceManyBody().strength(-20))
               .force('collide',d3.forceCollide().radius(60).iterations(2))
               .force("center", d3.forceCenter(chartWidth / 2, chartHeight / 2))
-              .force("aresta", d3.forceLink().id(function(d) { return d.index }))
-
+                .force("aresta", d3.forceLink().id(function(d) { return d.index }))
+      
           var aresta = svg.append("g")
               .attr("class", "links")
               .selectAll("line")
@@ -180,7 +278,7 @@
               .attr("font-size", texto_no)
               .attr("text-anchor", "middle")
               .attr("dy", ".45em")
-              .attr("fill", "white")
+              .attr("fill", "white") 
 
           var distancia = svg.append("g")
               .attr("class", "distancia")
@@ -189,7 +287,7 @@
               .enter()
               .append("text")
               .attr("font-size", texto_aresta)
-              .attr("fill", "purple")
+              .attr("fill", "purple") 
               .text( function (d) { return d.distancia; })
 
           var ticked = function() {
@@ -207,42 +305,32 @@
                 .attr("y1", function(d) { return d.source.y; })
                 .attr("x2", function(d) { return d.target.x; })
                 .attr("y2", function(d) { return d.target.y; });
-          }
-
+          }  
+          
           simulation
               .nodes(data.nodes)
               .on("tick", ticked);
 
-          var resultado_dijsktra = dijkstra(grafo);
-          var path_len = resultado_dijsktra.path.length;
-          document.getElementById( no_inicial).setAttribute( "fill", "red" )
-          for (var i = 0; i < resultado_dijsktra.path.length; i++) {
-              var li_node = document.createElement("li");
-              var textnode = document.createTextNode(resultado_dijsktra.path[i]);
-              li_node.appendChild(textnode);
-              if ( i < path_len - 1 ) {
-                var line_elem = document.getElementById( resultado_dijsktra.path[i] + '-' + resultado_dijsktra.path[i+1] ).setAttribute( "stroke", "red" );
-                var node_elem = document.getElementById( resultado_dijsktra.path[i+1] ).setAttribute( "fill", "red" );
-              }
-          }
-
+          simulation.force("aresta")
+              .links(data.links);
+    
           function dragstarted(d) {
               if (!d3.event.active) simulation.alphaTarget(0.3).restart();
               d.fx = d.x;
               d.fy = d.y;
           }
-
+          
           function dragged(d) {
               d.fx = d3.event.x;
               d.fy = d3.event.y;
           }
-
+          
           function dragended(d) {
               if (!d3.event.active) simulation.alphaTarget(0);
               d.fx = null;
               d.fy = null;
-          }
+          }         
       }
     }());
-  </script>
+  </script>    
 </html>
