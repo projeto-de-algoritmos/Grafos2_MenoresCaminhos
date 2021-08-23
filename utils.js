@@ -27,10 +27,19 @@ function cria_options(select, numero_nos) {
 
 function preenche_select(numero_nos) {
     origem = document.getElementById('origem');
+    reseta_select(origem);
     cria_options(origem, numero_nos)
     destino = document.getElementById('destino');
+    reseta_select(destino);
     cria_options(destino, numero_nos)
 }
+
+function reseta_select(select) {
+    var aux = select[0]
+    select.innerHTML = '';
+    select.appendChild(aux);
+}
+ 
 
 function dragstarted(d) {
     if (!d3.event.active) simulation.alphaTarget(0.3).restart();
@@ -48,3 +57,7 @@ function dragended(d) {
     d.fx = null;
     d.fy = null;
 }         
+
+function resetar_grafo() {
+    d3.selectAll("svg > *").remove();
+}

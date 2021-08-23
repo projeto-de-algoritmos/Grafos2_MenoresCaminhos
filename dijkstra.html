@@ -17,7 +17,7 @@
   }
 
   .margem-top {
-    margin-top: 2em;
+    margin-top: 1em;
   }
 
   .margem {
@@ -30,39 +30,68 @@
   }
 
   .select-no {
-    width: 13em;
+    width: 20em;
   }
 
   </style>
   <body>
-    <div class="row margem-top">
-      <h1 class="centraliza">Grafos - dijsktra</h1>
-    </div>
     <div class="row centraliza margem-top">
-      <form id="dijsktra-form">
-        <div class="row">
-          <div class="col-4 centraliza">
-            <select id="origem" class="form-select select-no" required>
-              <option selected disabled hidden value="">Selecione a origem</option>
-            </select>
-          </div>
-          <div class="col-4 centraliza">
-            <select id="destino" class="form-select select-no" required>
-              <option selected disabled hidden value="">Selecione a destino</option>
-            </select>
-          </div>  
-          <div class="col-4 centraliza">
-            <button id="rodar-dijsktra" type="submit" value="Submit" class="btn btn-lg btn-primary btn-submit">Rodar dijsktra</button>
+      <div class="row">
+        <div class="col-4">
+          <form id="grafo-form">
+            <div class="row centraliza">
+              <select id="n_nos" class="form-select select-no" required>
+                <option selected disabled hidden value="">Selecione o número de nós</option>
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+                <option value="25">25</option>
+                <option value="30">30</option>
+                <option value="40">40</option>
+              </select>
+            </div>
+            <div class="row centraliza margem-top">
+              <select id="n_arestas" class="form-select select-no" required>
+                <option selected disabled hidden value="">Máximo de arestas entre os nós</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+            </div>
+            <div class="row centraliza margem-top">
+              <button id="gerar-grafo" type="submit" value="Submit" class="btn btn-lg btn-primary btn-submit">Gerar grafo</button>
+            </div>
+          </form>
+        </div>
+        <div class="col-4">
+          <form id="dijsktra-form">
+            <div class="row centraliza">
+                <select id="origem" class="form-select select-no" required>
+                  <option selected disabled hidden value="">Selecione a origem</option>
+                </select>
+              </div>
+              <div class="row centraliza margem-top">
+                <select id="destino" class="form-select select-no" required>
+                  <option selected disabled hidden value="">Selecione a destino</option>
+                </select>
+              </div>
+              <div class="row centraliza margem-top">
+                <button id="rodar-dijsktra" type="submit" value="Submit" class="btn btn-lg btn-primary btn-submit">Rodar dijsktra</button>
+              </div>
+            </div>
+          </form>
+          <div class="col-4">
+              <h4 class="centraliza">Distância entre nós</h4>
+              <h1 id="distancia" class="centraliza">0</h1>
           </div>
         </div>
-      </form>
+      </div>
     </div>
     <div class="margem">
       <div class="row">
         <h4 id="caminho">Caminho percorrido: </h4>
-      </div>
-      <div class="row">
-        <h4 id="distancia">Distancia entre nós: </h4>
       </div>
     </div>
     <div class="row centraliza">
@@ -76,33 +105,40 @@
       var svg = d3.select("#grafo").append("svg")
       var chartLayer = svg.append("g").classed("chartLayer", true)
 
-      const NUMERO_NOS = 20
-      const NUMERO_MAX_ARESTAS_ENTRE_NOS = 3;
-      
+
       const RAIO = 25;
       const TAMANHO_TEXTO_NO = 17;
       const TAMANHO_TEXTO_ARESTA = 15;
-      
+
       $("#dijsktra-form").submit(function(e) {
-          e.preventDefault();
-          resetar_caminho();
-          no_inicial = e.target.elements.origem.value;
-          no_final = e.target.elements.destino.value;
-          if (valor_no(no_inicial) > valor_no(no_final)) {
-            alert('Não existe caminho para direção do maior para o menor');
-          } else {
-            rodar_dijsktra();
-          }
+        e.preventDefault();
+        resetar_caminho();
+        no_inicial = e.target.elements.origem.value;
+        no_final = e.target.elements.destino.value;
+        if (valor_no(no_inicial) > valor_no(no_final)) {
+          alert('Não existe caminho para direção do maior para o menor');
+        } else {
+          rodar_dijsktra();
+        }
       })
 
-      preenche_select(NUMERO_NOS);
-      let data = inicializar_valores();
-      gerar_grafo(data);
-      
-      
+      var numero_nos = 20
+      var numero_max_arestas_entre_nos = 3;
+      $("#grafo-form").submit(function(e) {
+        e.preventDefault();
+        resetar_grafo();
+        numero_nos = parseInt(e.target.elements.n_nos.value);
+        numero_max_arestas_entre_nos = parseInt(e.target.elements.n_arestas.value);
+        let data = inicializar_valores();
+        gerar_grafo(data);
+        preenche_select(numero_nos);
+      })
+
+
+
       function inicializar_valores() {
           var data = {
-              nodes:d3.range( 0, NUMERO_NOS ).map(function(d){ 
+              nodes:d3.range( 0, numero_nos ).map(function(d){
                 return {
                   r:RAIO,
                   nome: "No"+d
@@ -110,17 +146,17 @@
               }),
           }
           var jsonArr = [];
-          for (var i = 0; i < NUMERO_NOS; i++) {
-              var nb_links = Math.floor(Math.random() * NUMERO_MAX_ARESTAS_ENTRE_NOS) + 1
-              if ( i + 3 >= NUMERO_NOS) {
-                  nb_links = ( NUMERO_NOS - i ) - 1
+          for (var i = 0; i < numero_nos; i++) {
+              var nb_links = Math.floor(Math.random() * numero_max_arestas_entre_nos) + 1
+              if ( i + 3 >= numero_nos) {
+                  nb_links = ( numero_nos - i ) - 1
               }
               var nome = data.nodes[i].nome;
               grafo[nome] = {}
               for (var j = 1; j <= nb_links; j++) {
                   var dist = Math.floor(Math.random() * 9) + 1;
                   jsonArr.push({
-                      source: data.nodes[i], 
+                      source: data.nodes[i],
                       target: data.nodes[j+i],
                       distancia: dist
                   });
@@ -145,7 +181,7 @@
               var node_elem = document.getElementById( resultado_dijsktra.path[i+1] ).setAttribute( "fill", "red" );
             }
         }
-        document.getElementById('distancia').innerHTML = 'Distância entre nós: ' + resultado_dijsktra.distancia;
+        document.getElementById('distancia').innerHTML = resultado_dijsktra.distancia;
       }
 
       function dijkstra() {
@@ -203,31 +239,31 @@
         };
         return resultados;
       }
-      
+
       function definir_tamanho() {
           width = document.querySelector("#grafo").clientWidth
           height = document.querySelector("#grafo").clientHeight
-      
+
           margin = {top:0, left:0, bottom:0, right:0 }
-          
+
           chartWidth = width - (margin.left+margin.right)
           chartHeight = height - (margin.top+margin.bottom)
-          
+
           svg.attr("width", width).attr("height", height)
-          
+
           chartLayer
               .attr("width", chartWidth)
               .attr("height", chartHeight)
               .attr("transform", "translate("+[margin.left, margin.top]+")")
       }
-      
+
       async function gerar_grafo(data) {
           var simulation = d3.forceSimulation()
               .force('charge', d3.forceManyBody().strength(-20))
               .force('collide',d3.forceCollide().radius(60).iterations(2))
               .force("center", d3.forceCenter(chartWidth / 2, chartHeight / 2))
               .force("aresta", d3.forceLink().id(function(d) { return d.index }))
-      
+
           var aresta = svg.append("g")
               .attr("class", "links")
               .selectAll("line")
@@ -262,7 +298,7 @@
               .attr("font-size", TAMANHO_TEXTO_NO)
               .attr("text-anchor", "middle")
               .attr("dy", ".45em")
-              .attr("fill", "white") 
+              .attr("fill", "white")
 
           var distancia = svg.append("g")
               .attr("class", "distancia")
@@ -271,7 +307,7 @@
               .enter()
               .append("text")
               .attr("font-size", TAMANHO_TEXTO_ARESTA)
-              .attr("fill", "purple") 
+              .attr("fill", "purple")
               .text( function (d) { return d.distancia; })
 
           var ticked = function() {
@@ -289,15 +325,15 @@
                 .attr("y1", function(d) { return d.source.y; })
                 .attr("x2", function(d) { return d.target.x; })
                 .attr("y2", function(d) { return d.target.y; });
-          }  
-          
+          }
+
           simulation
               .nodes(data.nodes)
               .on("tick", ticked);
 
           simulation.force("aresta")
-              .links(data.links);    
+              .links(data.links);
       }
     }());
-  </script>    
+  </script>
 </html>
