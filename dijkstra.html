@@ -105,11 +105,11 @@
       var svg = d3.select("#grafo").append("svg")
       var chartLayer = svg.append("g").classed("chartLayer", true)
 
-
+      
       const RAIO = 25;
       const TAMANHO_TEXTO_NO = 17;
       const TAMANHO_TEXTO_ARESTA = 15;
-
+      
       $("#dijsktra-form").submit(function(e) {
         e.preventDefault();
         resetar_caminho();
@@ -121,7 +121,7 @@
           rodar_dijsktra();
         }
       })
-
+      
       var numero_nos = 20
       var numero_max_arestas_entre_nos = 3;
       $("#grafo-form").submit(function(e) {
@@ -134,11 +134,11 @@
         preenche_select(numero_nos);
       })
 
-
-
+      
+      
       function inicializar_valores() {
           var data = {
-              nodes:d3.range( 0, numero_nos ).map(function(d){
+              nodes:d3.range( 0, numero_nos ).map(function(d){ 
                 return {
                   r:RAIO,
                   nome: "No"+d
@@ -156,7 +156,7 @@
               for (var j = 1; j <= nb_links; j++) {
                   var dist = Math.floor(Math.random() * 9) + 1;
                   jsonArr.push({
-                      source: data.nodes[i],
+                      source: data.nodes[i], 
                       target: data.nodes[j+i],
                       distancia: dist
                   });
@@ -239,31 +239,31 @@
         };
         return resultados;
       }
-
+      
       function definir_tamanho() {
           width = document.querySelector("#grafo").clientWidth
           height = document.querySelector("#grafo").clientHeight
-
+      
           margin = {top:0, left:0, bottom:0, right:0 }
-
+          
           chartWidth = width - (margin.left+margin.right)
           chartHeight = height - (margin.top+margin.bottom)
-
+          
           svg.attr("width", width).attr("height", height)
-
+          
           chartLayer
               .attr("width", chartWidth)
               .attr("height", chartHeight)
               .attr("transform", "translate("+[margin.left, margin.top]+")")
       }
-
+      
       async function gerar_grafo(data) {
-          var simulation = d3.forceSimulation()
+          var simulation   = d3.forceSimulation()
               .force('charge', d3.forceManyBody().strength(-20))
               .force('collide',d3.forceCollide().radius(60).iterations(2))
               .force("center", d3.forceCenter(chartWidth / 2, chartHeight / 2))
               .force("aresta", d3.forceLink().id(function(d) { return d.index }))
-
+      
           var aresta = svg.append("g")
               .attr("class", "links")
               .selectAll("line")
@@ -298,7 +298,7 @@
               .attr("font-size", TAMANHO_TEXTO_NO)
               .attr("text-anchor", "middle")
               .attr("dy", ".45em")
-              .attr("fill", "white")
+              .attr("fill", "white") 
 
           var distancia = svg.append("g")
               .attr("class", "distancia")
@@ -307,7 +307,7 @@
               .enter()
               .append("text")
               .attr("font-size", TAMANHO_TEXTO_ARESTA)
-              .attr("fill", "purple")
+              .attr("fill", "purple") 
               .text( function (d) { return d.distancia; })
 
           var ticked = function() {
@@ -325,15 +325,36 @@
                 .attr("y1", function(d) { return d.source.y; })
                 .attr("x2", function(d) { return d.target.x; })
                 .attr("y2", function(d) { return d.target.y; });
-          }
-
+          }  
+          
           simulation
               .nodes(data.nodes)
               .on("tick", ticked);
 
           simulation.force("aresta")
-              .links(data.links);
+              .links(data.links);  
+              
+          
+          function dragstarted(event, d) {
+              console.log(d)
+              if (!event.active) simulation.alphaTarget(0.3).restart();  
+              d.fx = d.x;
+              d.fy = d.y;
+            }
+            
+            function dragged(event, d) {
+              console.log(d)
+              d.fx = event.x;
+              d.fy = event.y;
+            }
+            
+            function dragended(event, d) {
+              console.log(d)
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }         
       }
     }());
-  </script>
+  </script>    
 </html>
